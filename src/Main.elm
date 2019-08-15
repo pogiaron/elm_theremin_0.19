@@ -8,6 +8,7 @@ import Time
 import Json.Decode exposing (..)
 
 port audio : Model -> Cmd msg
+port visualization : (List Int -> msg) -> Sub msg
 
 -- MAIN
 main =
@@ -24,11 +25,12 @@ type alias Model =
   , frequencyValue: Float
   , windowWidth: Int
   , windowHeight: Int
+  , visualizationData: List Int
   }
 
 init : ({windowWidth: Int, windowHeight: Int}) -> (Model, Cmd Msg)
 init windowDimensions =
-  ( Model 0.001 3000 windowDimensions.windowWidth windowDimensions.windowHeight,
+  ( Model 0.001 3000 windowDimensions.windowWidth windowDimensions.windowHeight [],
   Cmd.none
   )
 
@@ -40,6 +42,7 @@ type Msg
   | DecrementFrequency
   | UpdateDimensions Int Int
   | UpdateMouse (Float, Float)
+  | Visualization (List Int)
   | NoOp
 
 
@@ -86,6 +89,9 @@ update msg model =
       in
          ( newModel, audio newModel)
     
+    Visualization data ->
+      ( {model | visualizationData = data}, Cmd.none)
+
     NoOp ->
       ( model, Cmd.none)
 
@@ -96,6 +102,7 @@ subscriptions model =
   Sub.batch
     [ Browser.Events.onResize UpdateDimensions
     , Sub.map UpdateMouse (Browser.Events.onMouseMove mousePositionDecoder)
+    , visualization Visualization
     ]
 
 mousePositionDecoder : Decoder (Float, Float)
@@ -124,5 +131,9 @@ view model =
       [ h1 [] [ text "Dimensions" ]
       , div [] [ text (String.fromInt model.windowHeight) ]
       , div [] [ text (String.fromInt model.windowWidth) ]
+      ]
+    , section []
+      [ h1 [] [ text "Visualization Data" ] 
+      , div [] [ text (List.foldr (\n -> \acc -> acc ++ " " ++ String.fromInt n) "" model.visualizationData)]
       ]
     ]
