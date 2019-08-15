@@ -7,6 +7,13 @@ import Task
 import Time
 import Json.Decode exposing (..)
 
+import Collage.Layout exposing (..)
+import Collage.Render exposing (..)
+import Collage.Text exposing (..)
+import Collage exposing (..)
+import Color exposing (..)
+
+
 port audio : Model -> Cmd msg
 port visualization : (List Int -> msg) -> Sub msg
 
@@ -132,8 +139,35 @@ view model =
       , div [] [ text (String.fromInt model.windowHeight) ]
       , div [] [ text (String.fromInt model.windowWidth) ]
       ]
-    , section []
-      [ h1 [] [ text "Visualization Data" ] 
-      , div [] [ text (List.foldr (\n -> \acc -> acc ++ " " ++ String.fromInt n) "" model.visualizationData)]
-      ]
+    , div []
+      [ (visualizationGraph model)]
+    -- , section []
+    --   [ h1 [] [ text "Visualization Data" ] 
+    --   , div [] [ text (List.foldr (\(x, y) -> \acc -> acc ++ " (" ++ String.fromFloat x ++ ", " ++ String.fromFloat y ++ ")" ) "" (toPoints model))]
+    --   ]
     ]
+
+visualizationGraph : Model -> Html msg
+visualizationGraph model =
+  let
+    points = toPoints model
+  in
+    path points 
+    |> traced (solid thin (uniform red)) 
+    |> shift ( (toFloat model.windowWidth) / -2, (toFloat model.windowHeight) / -2) 
+    |> svgBox (toFloat model.windowWidth, toFloat model.windowHeight)
+    
+
+toPoints : Model -> List (Float, Float)
+toPoints model =
+  let
+    sliceWidth = (toFloat model.windowWidth) / (toFloat (List.length model.visualizationData))
+    indexedDatumToPoint n datum =
+      let
+        v = (toFloat datum) / 128
+        y = (v * (toFloat model.windowHeight)) / 2
+        x = sliceWidth * (toFloat n)
+      in
+        ( x, y )
+  in
+    model.visualizationData |> List.indexedMap indexedDatumToPoint
